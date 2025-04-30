@@ -43,7 +43,7 @@ export function CommandOutput({
       case "chocolatey":
         return `choco install ${selectedPackageNames.join(" ")}${autoYes ? " -y" : ""}`
       case "winget":
-        return `winget install ${selectedPackageNames.join(" ")} --silent`
+        return `winget install ${selectedPackageNames.join(" ")} -h --accept-package-agreements`
       case "scoop":
         return `scoop install ${selectedPackageNames.join(" ")}`
       case "homebrew":
@@ -66,10 +66,23 @@ export function CommandOutput({
 
     switch (selectedOS) {
       case "windows":
-        return `@echo off\n${command}`
+        return `@echo off
+:: Check for admin privileges
+NET SESSION >nul 2>&1
+IF %ERRORLEVEL% NEQ 0 (
+    echo Requesting administrative privileges...
+    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    exit /b
+)
+
+echo Running with administrative privileges...
+${command}
+pause
+`
       case "macos":
       case "linux":
-        return `#!/bin/bash\n${command}`
+        return `#!/bin/bash
+${command}`
       default:
         return command
     }
